@@ -1,17 +1,12 @@
 package schach2022;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 
-public class ChessFieldButton extends JButton implements MouseListener, ActionListener {
+public class ChessFieldButton extends JButton implements ActionListener {
 
     private final static String PATH = "C:/Users/yassi/IdeaProjects/Home (new JDK)/src/schachNeu/Icons/";
     private final static ImageIcon ROOK_BLACK = new ImageIcon(PATH + "Rook_Black.png");
@@ -29,16 +24,8 @@ public class ChessFieldButton extends JButton implements MouseListener, ActionLi
 
     private final static ImageIcon EMPTY_MOVED_BLACK = new ImageIcon(PATH + "EMPTY_MOVED_BLACK.png");
     private final static ImageIcon EMPTY_MOVED_WHITE = new ImageIcon(PATH + "EMPTY_MOVED_WHITE.png");
-    private Position pos;
+    private final Position pos;
     ChessFigure figureType;
-
-    public boolean wantsToMove;
-
-    //private MouseEvent previous;
-    private ChessFieldButton target;
-    private static ChessFieldButton previousClickedFigureButton;
-    private static ChessFieldButton previousClickedEmptyButton;
-
     private boolean touched;
 
     public ChessFieldButton(Position pos, ChessFigure figureType, MouseListener l) {
@@ -46,23 +33,10 @@ public class ChessFieldButton extends JButton implements MouseListener, ActionLi
         this.figureType = figureType;
         this.setSize(100, 100);
         this.setVisible(true);
-        this.addActionListener(this);
-        this.setBackground(Color.WHITE);
         this.addMouseListener(l);
-        this.touched = false;
-    }
-
-    public ChessFieldButton(Position pos, ChessFigure figureType) {
-        this.pos = pos;
-        this.figureType = figureType;
-        this.setSize(100, 100);
-        this.setVisible(true);
         this.addActionListener(this);
         this.setBackground(Color.WHITE);
-        this.addMouseListener(this);
         this.touched = false;
-        this.wantsToMove = false;
-        this.target = null;
     }
 
     public void setIcon() {
@@ -92,20 +66,8 @@ public class ChessFieldButton extends JButton implements MouseListener, ActionLi
 
         }
     }
-    private static void resizeImage(BufferedImage originalImage) throws IOException {
-        BufferedImage resizedImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
-        Graphics2D graphics2D = resizedImage.createGraphics();
-        graphics2D.drawImage(originalImage, 0, 0, 100, 100, null);
-        graphics2D.dispose();
-        ImageIO.write(resizedImage, "png", new File("C:/Users/yassi/IdeaProjects/Home (new JDK)/src/schachNeu/Icons/King_Black.png"));
-
-    }
     public ChessFigure getFigureType() {
         return figureType;
-    }
-
-    public void setPos(Position pos) {
-        this.pos = pos;
     }
 
     public void setFigure(ChessFigure figureType) {
@@ -123,6 +85,10 @@ public class ChessFieldButton extends JButton implements MouseListener, ActionLi
         System.out.println("Pos: " + this.pos + " | type: " + this.figureType + ", " + this.touched);
     }
 
+    public Position getPos() {
+        return pos;
+    }
+
     public void setTouched(boolean touched) {
         this.touched = touched;
     }
@@ -131,8 +97,18 @@ public class ChessFieldButton extends JButton implements MouseListener, ActionLi
         return touched;
     }
 
+    /*
     public static void main(String[] args) throws IOException {
         //resizeImage(ImageIO.read(new File("C:/Users/yassi/IdeaProjects/Home (new JDK)/src/schachNeu/Icons/King_Black.png")));
+    }
+
+    private static void resizeImage(BufferedImage originalImage) throws IOException {
+        BufferedImage resizedImage = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
+        Graphics2D graphics2D = resizedImage.createGraphics();
+        graphics2D.drawImage(originalImage, 0, 0, 100, 100, null);
+        graphics2D.dispose();
+        ImageIO.write(resizedImage, "png", new File("C:/Users/yassi/IdeaProjects/Home (new JDK)/src/schachNeu/Icons/King_Black.png"));
+
     }
 
     @Override
@@ -192,4 +168,6 @@ public class ChessFieldButton extends JButton implements MouseListener, ActionLi
     public void mouseExited(MouseEvent e) {
 
     }
+
+ */
 }
