@@ -32,7 +32,10 @@ public class ChessFieldButton extends JButton implements MouseListener, ActionLi
     private Position pos;
     ChessFigure figureType;
 
-    private MouseEvent previous;
+    public boolean wantsToMove;
+
+    //private MouseEvent previous;
+    private ChessFieldButton target;
     private static ChessFieldButton previousClickedFigureButton;
     private static ChessFieldButton previousClickedEmptyButton;
 
@@ -58,6 +61,8 @@ public class ChessFieldButton extends JButton implements MouseListener, ActionLi
         this.setBackground(Color.WHITE);
         this.addMouseListener(this);
         this.touched = false;
+        this.wantsToMove = false;
+        this.target = null;
     }
 
     public void setIcon() {
@@ -105,6 +110,7 @@ public class ChessFieldButton extends JButton implements MouseListener, ActionLi
 
     public void setFigure(ChessFigure figureType) {
         this.figureType = figureType;
+        this.setIcon();
     }
 
     @Override
@@ -131,34 +137,41 @@ public class ChessFieldButton extends JButton implements MouseListener, ActionLi
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        /*
         if (previousClickedFigureButton == null)
             previousClickedFigureButton = this;
-        if(previousClickedEmptyButton == null)
+        if (previousClickedEmptyButton == null)
             previousClickedEmptyButton = this;
 
-        switch (this.figureType) {
-            case EMPTY, EMPTY_MOVED_BLACK, EMPTY_MOVED_WHITE:
-                if (this.getBackground() == Color.DARK_GRAY)
-                    this.setBackground(Color.WHITE);
-                else {
+        if (this.figureType == ChessFigure.EMPTY || this.figureType == ChessFigure.EMPTY_MOVED_BLACK || this.figureType == ChessFigure.EMPTY_MOVED_WHITE) {
+            if (this.getBackground() == Color.DARK_GRAY) {
+                this.setBackground(Color.WHITE);
+                this.target = null;
+            }
+            else {
+                if (previousClickedEmptyButton.getBackground() != Color.BLUE)
                     previousClickedEmptyButton.setBackground(Color.WHITE);
-                    this.setBackground(Color.DARK_GRAY);
-                    previousClickedEmptyButton = this;
-                }
-                break;
-            default:
-                previousClickedEmptyButton.setBackground(Color.WHITE);
-                if (this.getBackground() == Color.blue)
-                    this.setBackground(Color.WHITE);
-                else {
-                    previousClickedFigureButton.setBackground(Color.WHITE);
-                    this.setBackground(Color.blue);
-                    previousClickedFigureButton = this;
-                }
+                this.setBackground(Color.DARK_GRAY);
+                this.target = this;
+                this.wantsToMove = true;
+                previousClickedEmptyButton = this;
+
+            }
         }
-        System.out.println(previousClickedFigureButton.getBackground());
-        */
+        else {
+            previousClickedEmptyButton.setBackground(Color.WHITE);
+            if (this.getBackground() == Color.blue) {
+                this.setBackground(Color.WHITE);
+                this.target = null;
+                this.wantsToMove = false;
+            }
+            else {
+                previousClickedFigureButton.setBackground(Color.WHITE);
+                this.setBackground(Color.blue);
+                previousClickedFigureButton = this;
+                this.wantsToMove = true;
+            }
+        }
+        System.out.println(this.target + " : " + this.wantsToMove);
     }
 
     @Override
