@@ -14,8 +14,10 @@ public class ChessGame implements MouseListener {
     private final ChessFieldButton[][] grid;
     private long turn;
 
+    private ChessFieldButton movedMarkerButton;
+    private List<Position> markedPos;
     private ChessFieldButton previousClickedFigureButton;
-    private ChessFieldButton previousClickedEmptyButton;
+
 
     public ChessGame() {
         this.frame = new JFrame("My Chess");
@@ -26,11 +28,15 @@ public class ChessGame implements MouseListener {
         this.frame.setResizable(false);
         this.frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         this.turn = 0;
+        this.markedPos = new ArrayList<>();
+        this.movedMarkerButton = new ChessFieldButton(null, null, null);
 
         this.grid = new ChessFieldButton[8][8];
         InitDataFigures.init();
         this.initData = InitDataFigures.get();
         this.initiateField();
+
+        this.frame.repaint();
     }
 
     @Override
@@ -65,191 +71,326 @@ public class ChessGame implements MouseListener {
         }
         this.frame.repaint();
     }
-    public void moveIfWanted() {
-        System.out.println("Hallo");
-    }
+
     private void moveFigure(Position origin, Position dest) {
+        this.movedMarkerButton.setMoved(false);
+        this.movedMarkerButton.setBackground(Color.WHITE);
         this.turn++;
         ChessFieldButton originButton = this.grid[origin.getX()][origin.getY()];
         ChessFieldButton destButton = this.grid[dest.getX()][dest.getY()];
         ChessFigure toMove = this.grid[origin.getX()][origin.getY()].getFigureType();
 
-        originButton.setFigure((toMove.color == Color.WHITE) ? ChessFigure.EMPTY_MOVED_WHITE : ChessFigure.EMPTY_MOVED_BLACK);
+        originButton.setFigure(ChessFigure.EMPTY);
+        originButton.setBackground(Color.GREEN);
+        originButton.setMoved(true);
+        this.movedMarkerButton = originButton;
         destButton.setFigure(toMove);
+        destButton.setTouched(true);
+        this.removeMarker();
+        this.previousClickedFigureButton = null;
+
+        for (ChessFieldButton[] ch : this.grid) {
+            for (ChessFieldButton c : ch) {
+                c.setBounds(c.getX(), 700 -c.getY(), 100, 100);
+            }
+        }
         this.frame.repaint();
     }
 
     private boolean isEmpty(ChessFieldButton button) {
-        return button.figureType == ChessFigure.EMPTY || button.figureType == ChessFigure.EMPTY_MOVED_BLACK || button.figureType == ChessFigure.EMPTY_MOVED_WHITE;
+        return button.figureType == ChessFigure.EMPTY;
     }
-    public List<Position> checkAvailablePos(ChessFieldButton buttonClicked) {
+
+    private List<Position> getRookPositions(ChessFieldButton buttonClicked, int buttonX, int buttonY) {
+        List<Position> result = new ArrayList<>();
+        for (int i = buttonY + 1; i < this.grid.length; i++) {
+            if (!isEmpty(this.grid[buttonX][i])) {
+                if (buttonClicked.figureType.color != this.grid[buttonX][i].figureType.color)
+                    result.add(new Position(buttonX, i));
+                break;
+            }
+            else
+                result.add(new Position(buttonX, i));
+        }
+        for (int i = buttonY - 1; i >= 0; i--) {
+            if (!isEmpty(this.grid[buttonX][i])) {
+                if (buttonClicked.figureType.color != this.grid[buttonX][i].figureType.color)
+                    result.add(new Position(buttonX, i));
+                break;
+            }
+            else
+                result.add(new Position(buttonX, i));
+        }
+
+        for (int i = buttonX + 1; i < this.grid.length; i++) {
+            if (!isEmpty(this.grid[i][buttonY])) {
+                if (buttonClicked.figureType.color != this.grid[i][buttonY].figureType.color)
+                    result.add(new Position(i, buttonY));
+                break;
+            }
+            else
+                result.add(new Position(i, buttonY));
+        }
+        for (int i = buttonX - 1; i >= 0; i--) {
+            if (!isEmpty(this.grid[i][buttonY])) {
+                if (buttonClicked.figureType.color != this.grid[i][buttonY].figureType.color)
+                    result.add(new Position(i, buttonY));
+                break;
+            }
+            else
+                result.add(new Position(i, buttonY));
+        }
+        return result;
+    }
+    private List<Position> getBishopPositions(ChessFieldButton buttonClicked, int buttonX, int buttonY) {
+        List<Position> result = new ArrayList<>();
+        for (int i = buttonX + 1, j = buttonY +1; i < this.grid.length && j < this.grid.length; i++, j++) {
+            if (!isEmpty(this.grid[i][j])) {
+                if (buttonClicked.figureType.color != this.grid[i][j].figureType.color)
+                    result.add(new Position(i, j));
+                break;
+            }
+            else
+                result.add(new Position(i, j));
+        }
+        for (int i = buttonX - 1, j = buttonY -1; i >= 0 && j >= 0; i--, j--) {
+            if (!isEmpty(this.grid[i][j])) {
+                if (buttonClicked.figureType.color != this.grid[i][j].figureType.color)
+                    result.add(new Position(i, j));
+                break;
+            }
+            else
+                result.add(new Position(i, j));
+        }
+
+        for (int i = buttonX + 1, j = buttonY -1; i < this.grid.length && j >= 0; i++, j--) {
+            if (!isEmpty(this.grid[i][j])) {
+                if (buttonClicked.figureType.color != this.grid[i][j].figureType.color)
+                    result.add(new Position(i, j));
+                break;
+            }
+            else
+                result.add(new Position(i, j));
+        }
+        for (int i = buttonX - 1, j = buttonY +1; i >= 0 && j < this.grid.length; i--, j++) {
+            if (!isEmpty(this.grid[i][j])) {
+                if (buttonClicked.figureType.color != this.grid[i][j].figureType.color)
+                    result.add(new Position(i, j));
+                break;
+            }
+            else
+                result.add(new Position(i, j));
+        }
+        return result;
+    }
+    private List<Position> findAvailablePos(ChessFieldButton buttonClicked) {
         List<Position> result = new ArrayList<>();
 
         if (buttonClicked.figureType == ChessFigure.EMPTY)
             return null;
 
-        if (this.turn % 2 == 0) {
-            switch (buttonClicked.figureType) {
-                case ROOK_WHITE:
-                    int buttonX = buttonClicked.getPos().getX();
-                    int buttonY = buttonClicked.getPos().getY();
+        int buttonX = buttonClicked.getPos().getX();
+        int buttonY = buttonClicked.getPos().getY();
 
-                    for (int i = buttonY + 1; i < this.grid.length; i++) {
-                        if (!isEmpty(this.grid[buttonX][i])) {
-                            break;
-                        }
-                        else
-                            result.add(new Position(buttonX, i));
-                    }
-                    for (int i = buttonY - 1; i > 0; i--) {
-                        if (!isEmpty(this.grid[buttonX][i])) {
-                            break;
-                        }
-                        else
-                            result.add(new Position(buttonX, i));
-                    }
+        switch (buttonClicked.figureType) {
+            case ROOK_WHITE, ROOK_BLACK:
 
-                    for (int i = buttonX + 1; i < this.grid.length; i++) {
-                        if (!isEmpty(this.grid[i][buttonY])) {
+                result = getRookPositions(buttonClicked, buttonX, buttonY);
+
+                break;
+
+            case BISHOP_WHITE, BISHOP_BLACK:
+
+                result = getBishopPositions(buttonClicked, buttonX, buttonY);
+
+                break;
+
+            case QUEEN_WHITE, QUEEN_BLACK:
+
+                result.addAll(getRookPositions(buttonClicked, buttonX, buttonY));
+                result.addAll(getBishopPositions(buttonClicked, buttonX, buttonY));
+
+                break;
+
+            case KNIGHT_WHITE, KNIGHT_BLACK:
+                if (buttonX > 1 && buttonY < this.grid.length -1 && (isEmpty(this.grid[buttonX -2][buttonY +1])
+                        || this.grid[buttonX -2][buttonY +1].figureType.color != buttonClicked.figureType.color))
+                    result.add(new Position(buttonX -2, buttonY +1));
+
+                if (buttonX > 1 && buttonY > 0 && (buttonY < this.grid.length && isEmpty(this.grid[buttonX -2][buttonY -1])
+                        || this.grid[buttonX -2][buttonY -1].figureType.color != buttonClicked.figureType.color))
+                    result.add(new Position(buttonX -2, buttonY -1));
+
+                // Movement up -> left and right
+
+                if (buttonX < this.grid.length -2 && buttonY < this.grid.length -1 && (isEmpty(this.grid[buttonX +2][buttonY +1])
+                        || this.grid[buttonX +2][buttonY +1].figureType.color != buttonClicked.figureType.color))
+                    result.add(new Position(buttonX +2, buttonY +1));
+
+                if (buttonX < this.grid.length -2 && buttonY > 0 && (buttonY < this.grid.length && isEmpty(this.grid[buttonX +2][buttonY -1])
+                        || this.grid[buttonX +2][buttonY -1].figureType.color != buttonClicked.figureType.color))
+                    result.add(new Position(buttonX +2, buttonY -1));
+
+                // Movement down -> left and right
+
+                if (buttonX < this.grid.length -1 && buttonY < this.grid.length -2 && (isEmpty(this.grid[buttonX +1][buttonY +2])
+                        || this.grid[buttonX +1][buttonY +2].figureType.color != buttonClicked.figureType.color))
+                    result.add(new Position(buttonX +1, buttonY +2));
+
+                if (buttonX > 0 && buttonY < this.grid.length -2 && (isEmpty(this.grid[buttonX -1][buttonY +2])
+                        || this.grid[buttonX -1][buttonY +2].figureType.color != buttonClicked.figureType.color))
+                    result.add(new Position(buttonX -1, buttonY +2));
+
+                // Movement right -> up and down
+
+                if (buttonX < this.grid.length -1 && buttonY > 1 && (isEmpty(this.grid[buttonX +1][buttonY -2])
+                        || this.grid[buttonX +1][buttonY -2].figureType.color != buttonClicked.figureType.color))
+                    result.add(new Position(buttonX +1, buttonY -2));
+
+                if (buttonX > 0 && buttonY > 1 && (isEmpty(this.grid[buttonX -1][buttonY -2])
+                        || this.grid[buttonX -1][buttonY -2].figureType.color != buttonClicked.figureType.color))
+                    result.add(new Position(buttonX -1, buttonY -2));
+
+                // Movement left -> up and down
+
+                break;
+
+            case KING_WHITE, KING_BLACK:
+                if (buttonX < this.grid.length-1 && (isEmpty(this.grid[buttonX +1][buttonY])
+                        || this.grid[buttonX +1][buttonY].figureType.color != buttonClicked.figureType.color))
+                    result.add(new Position(buttonX +1, buttonY));
+
+                if (buttonX < this.grid.length-1 && (buttonY < this.grid.length && isEmpty(this.grid[buttonX +1][buttonY +1])
+                        || this.grid[buttonX +1][buttonY +1].figureType.color != buttonClicked.figureType.color))
+                    result.add(new Position(buttonX +1, buttonY +1));
+
+                if (buttonX < this.grid.length-1 && (isEmpty(this.grid[buttonX][buttonY +1])
+                        || this.grid[buttonX][buttonY +1].figureType.color != buttonClicked.figureType.color))
+                    result.add(new Position(buttonX, buttonY +1));
+
+                if (buttonX > 0 && (isEmpty(this.grid[buttonX -1][buttonY])
+                        || this.grid[buttonX -1][buttonY].figureType.color != buttonClicked.figureType.color))
+                    result.add(new Position(buttonX -1, buttonY));
+
+
+                if (buttonX > 0 && buttonY > 0 && (isEmpty(this.grid[buttonX -1][buttonY -1])
+                        || this.grid[buttonX -1][buttonY -1].figureType.color != buttonClicked.figureType.color))
+                    result.add(new Position(buttonX -1, buttonY -1));
+
+                if (buttonY > 0 && (isEmpty(this.grid[buttonX][buttonY -1])
+                        || this.grid[buttonX][buttonY -1].figureType.color != buttonClicked.figureType.color))
+                    result.add(new Position(buttonX, buttonY -1));
+
+                if (buttonX > 0 && buttonY < this.grid.length-1 && (isEmpty(this.grid[buttonX -1][buttonY +1])
+                        || this.grid[buttonX -1][buttonY +1].figureType.color != buttonClicked.figureType.color))
+                    result.add(new Position(buttonX -1, buttonY +1));
+
+                if (buttonX < this.grid.length-1 && buttonY > 0 && (isEmpty(this.grid[buttonX +1][buttonY -1])
+                        || this.grid[buttonX +1][buttonY -1].figureType.color != buttonClicked.figureType.color))
+                    result.add(new Position(buttonX +1, buttonY -1));
+                break;
+
+            case PAWN_WHITE, PAWN_BLACK:
+                if (buttonClicked.figureType == ChessFigure.PAWN_BLACK) {
+                    for (int i = buttonX +1; i < this.grid.length; i++) {
+                        if (result.size() > 1 || !isEmpty(this.grid[i][buttonY]))
                             break;
-                        }
-                        else
+                        else {
+                            if (result.size() == 1 && buttonClicked.isTouched())
+                                break;
                             result.add(new Position(i, buttonY));
+                        }
                     }
+                }
+                else {
                     for (int i = buttonX - 1; i > 0; i--) {
-                        if (!isEmpty(this.grid[i][buttonY])) {
+                        if (result.size() > 1 || !isEmpty(this.grid[i][buttonY]))
                             break;
-                        }
-                        else
+                        else {
+                            if (result.size() == 1 && buttonClicked.isTouched())
+                                break;
                             result.add(new Position(i, buttonY));
-                    }
-
-                    break;
-                case KNIGHT_WHITE:
-
-                    break;
-
-                case BISHOP_WHITE:
-
-                    break;
-                case KING_WHITE:
-
-                    break;
-
-                case QUEEN_WHITE:
-
-                    break;
-
-                default:
-                    throw new IllegalArgumentException("Tried to move wrong players figure!");
-            }
-        }
-
-        else {
-            switch (buttonClicked.figureType) {
-                case ROOK_BLACK:
-                    for (int i = buttonClicked.getX() + 1; i < this.grid.length; i++) {
-                        if (this.grid[buttonClicked.getX()][i].figureType == ChessFigure.EMPTY) {
-                            result.add(new Position(i, buttonClicked.getY()));
                         }
                     }
-                    for (int i = buttonClicked.getY() + 1; i < this.grid[buttonClicked.getX()].length; i++) {
-                        if (this.grid[buttonClicked.getX()][i].figureType == ChessFigure.EMPTY) {
-                            result.add(new Position(i, buttonClicked.getX()));
-                        }
-                    }
-                    break;
-                case KNIGHT_BLACK:
+                }
+                break;
 
-                    break;
-
-                case BISHOP_BLACK:
-
-                    break;
-                case KING_BLACK:
-
-                    break;
-
-                case QUEEN_BLACK:
-
-                    break;
-
-                default:
-                    throw new IllegalArgumentException("Tried to move wrong players figure!");
-            }
+            default:
+                throw new IllegalArgumentException("Clicked on Empty field!");
         }
         return result;
     }
 
-    public static void main(String[] args) {
+    private void removeMarker() {
+        for (Position p: this.markedPos) {
+            if (this.grid[p.getX()][p.getY()].wasMoved())
+                this.grid[p.getX()][p.getY()].setBackground(Color.GREEN);
+            else
+                this.grid[p.getX()][p.getY()].setBackground(Color.WHITE);
+        }
+    }
+    private void markAvailablePos(ChessFieldButton button) {
+        List<Position> positions = this.findAvailablePos(button);
 
+        this.removeMarker();
 
-        ChessGame game = new ChessGame();
-        //System.out.println(game);
-
-        game.moveFigure(new Position(6,0), new Position(4, 0));
-        game.moveIfWanted();
-
-        game.turn++;
-        List<Position> a = game.checkAvailablePos(game.grid[7][0]);
-        //System.out.println(game.grid[0][7].figureType);
-        System.out.println(a);
-        //System.out.println(game);
-
-        //System.out.println(game.getGrid());
-        //game.printGrid();
-
-
-        /*
-        JFrame frame = new JFrame("Glossary");
-        frame.setSize(400, 200);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        JButton LookUpWord = new JButton("Look up word");  // create the button
-        JPanel panel1 = new JPanel();  // create the panel
-        panel1.add(LookUpWord);  // add the button to the panel
-        frame.add(panel1, BorderLayout.NORTH);  // add the panel to the frame
-
-        JButton SubmitNewWord = new JButton("Submit word");
-        JPanel panel2 = new JPanel();
-        panel2.add(SubmitNewWord);
-        frame.add(panel2, BorderLayout.SOUTH);
-
-        frame.setVisible(true);
-        */
+        if (positions == null)
+            return;
+        for (Position p : positions) {
+            this.grid[p.getX()][p.getY()].setBackground(Color.GRAY);
+        }
+        this.markedPos = new ArrayList<>(positions);
+        this.frame.repaint();
     }
 
+    /**
+     * Is called, if a playbutton (figure or empty field) is clicked. Launches {@code moveFigure()} if a figure and a valid empty field is selected in order.
+     * sets colorscheme for markings aswell.
+     * @param e the click-event to be processed.
+     */
     @Override
     public void mouseClicked(MouseEvent e) {
         ChessFieldButton buttonClicked = (ChessFieldButton) e.getSource();
 
         if (previousClickedFigureButton == null)
             previousClickedFigureButton = buttonClicked;
-        if (previousClickedEmptyButton == null)
-            previousClickedEmptyButton = buttonClicked;
 
-        if (isEmpty(buttonClicked)) {
-            if (buttonClicked.getBackground() == Color.DARK_GRAY) {
-                buttonClicked.setBackground(Color.WHITE);
-            }
-            else {
-                if (previousClickedEmptyButton.getBackground() != Color.BLUE && previousClickedEmptyButton.getBackground() != Color.GREEN)
-                    previousClickedEmptyButton.setBackground(Color.WHITE);
-                if (buttonClicked.getBackground() != Color.GREEN && previousClickedFigureButton.getBackground() == Color.BLUE)
-                    buttonClicked.setBackground(Color.DARK_GRAY);
-                previousClickedEmptyButton = buttonClicked;
-            }
+        if (buttonClicked.getBackground() == Color.blue) {
+            buttonClicked.setBackground(Color.WHITE);
         }
         else {
-            previousClickedEmptyButton.setBackground(Color.WHITE);
-            if (buttonClicked.getBackground() == Color.blue) {
-                buttonClicked.setBackground(Color.WHITE);
+            if (!isEmpty(buttonClicked)) {
+                if (this.turn % 2 == 0 && buttonClicked.figureType.color == Color.BLACK) {
+                    markAvailablePos(previousClickedFigureButton);
+                    moveIfAllowed(previousClickedFigureButton, buttonClicked);
+                    return;
+                }
+
+                if (this.turn % 2 != 0 && buttonClicked.figureType.color == Color.WHITE) {
+                    markAvailablePos(previousClickedFigureButton);
+                    moveIfAllowed(previousClickedFigureButton, buttonClicked);
+                    return;
+                }
+
+                if (!previousClickedFigureButton.wasMoved())
+                    previousClickedFigureButton.setBackground(Color.WHITE);
+                buttonClicked.setBackground(Color.blue);
+                markAvailablePos(buttonClicked);
+                previousClickedFigureButton = buttonClicked;
             }
             else {
-                previousClickedFigureButton.setBackground(Color.WHITE);
-                buttonClicked.setBackground(Color.blue);
-                previousClickedFigureButton = buttonClicked;
+                moveIfAllowed(previousClickedFigureButton, buttonClicked);
+            }
+        }
+    }
 
+    private void moveIfAllowed(ChessFieldButton previousClickedFigureButton, ChessFieldButton buttonClicked) {
+        if (this.markedPos != null) {
+            for (Position markedPo : this.markedPos) {
+                if (markedPo.equals(buttonClicked.getPos())) {
+                    this.moveFigure(previousClickedFigureButton.getPos(), buttonClicked.getPos());
+                    break;
+                }
             }
         }
     }
@@ -272,5 +413,21 @@ public class ChessGame implements MouseListener {
     @Override
     public void mouseExited(MouseEvent e) {
 
+    }
+
+    public static void main(String[] args) {
+        ChessGame game = new ChessGame();
+/*
+        game.moveFigure(new Position(6,0), new Position(4, 0));
+        game.moveIfWanted();
+        game.turn++;
+
+ */
+        //game.markAvailablePos(game.grid[7][0]);
+        //System.out.println(game.grid[0][7].figureType);
+        //System.out.println(game);
+
+        //System.out.println(game.getGrid());
+        //game.printGrid();
     }
 }

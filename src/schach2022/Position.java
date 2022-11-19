@@ -24,4 +24,8 @@ public class Position {
     public String toString() {
         return "(x=" + x + ", y=" + y +")";
     }
+
+    public boolean equals(Position p) {
+        return this.x == p.x && this.y == p.y;
+    }
 }

@@ -21,12 +21,11 @@ public class ChessFieldButton extends JButton implements ActionListener {
     private final static ImageIcon KNIGHT_WHITE = new ImageIcon(PATH + "Knight_White.png");
     private final static ImageIcon BISHOP_BLACK = new ImageIcon(PATH + "Bishop_Black.png");
     private final static ImageIcon BISHOP_WHITE = new ImageIcon(PATH + "Bishop_White.png");
-
-    private final static ImageIcon EMPTY_MOVED_BLACK = new ImageIcon(PATH + "EMPTY_MOVED_BLACK.png");
-    private final static ImageIcon EMPTY_MOVED_WHITE = new ImageIcon(PATH + "EMPTY_MOVED_WHITE.png");
     private final Position pos;
     ChessFigure figureType;
     private boolean touched;
+
+    private boolean movedAwayFrom;
 
     public ChessFieldButton(Position pos, ChessFigure figureType, MouseListener l) {
         this.pos = pos;
@@ -37,6 +36,7 @@ public class ChessFieldButton extends JButton implements ActionListener {
         this.addActionListener(this);
         this.setBackground(Color.WHITE);
         this.touched = false;
+        this.movedAwayFrom = false;
     }
 
     public void setIcon() {
@@ -59,17 +59,21 @@ public class ChessFieldButton extends JButton implements ActionListener {
             case PAWN_BLACK -> this.setIcon(PAWN_BLACK);
             case PAWN_WHITE -> this.setIcon(PAWN_WHITE);
 
-            case EMPTY_MOVED_BLACK, EMPTY_MOVED_WHITE -> {
-                this.setIcon(null);
-                this.setBackground(Color.GREEN);
+            case EMPTY -> {
+                this.setIcon(null); this.setBackground(Color.WHITE);
             }
-
         }
     }
     public ChessFigure getFigureType() {
         return figureType;
     }
 
+    public void setMoved(boolean value) {
+        this.movedAwayFrom = value;
+    }
+    public boolean wasMoved() {
+        return this.movedAwayFrom;
+    }
     public void setFigure(ChessFigure figureType) {
         this.figureType = figureType;
         this.setIcon();
