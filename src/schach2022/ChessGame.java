@@ -360,13 +360,8 @@ public class ChessGame implements MouseListener {
         }
         else {
             if (!isEmpty(buttonClicked)) {
-                if (this.turn % 2 == 0 && buttonClicked.figureType.color == Color.BLACK) {
-                    markAvailablePos(previousClickedFigureButton);
-                    moveIfAllowed(previousClickedFigureButton, buttonClicked);
-                    return;
-                }
-
-                if (this.turn % 2 != 0 && buttonClicked.figureType.color == Color.WHITE) {
+                if ((this.turn % 2 == 0 && buttonClicked.figureType.color == Color.BLACK || this.turn % 2 != 0 && buttonClicked.figureType.color == Color.WHITE)
+                        && previousClickedFigureButton.figureType.color != buttonClicked.figureType.color) {
                     markAvailablePos(previousClickedFigureButton);
                     moveIfAllowed(previousClickedFigureButton, buttonClicked);
                     return;
@@ -375,11 +370,14 @@ public class ChessGame implements MouseListener {
                 if (!previousClickedFigureButton.wasMoved())
                     previousClickedFigureButton.setBackground(Color.WHITE);
                 buttonClicked.setBackground(Color.blue);
-                markAvailablePos(buttonClicked);
+                if (this.turn % 2 == 0 && buttonClicked.figureType.color == Color.WHITE || this.turn % 2 != 0 && buttonClicked.figureType.color == Color.BLACK)
+                    markAvailablePos(buttonClicked);
+
                 previousClickedFigureButton = buttonClicked;
             }
             else {
-                moveIfAllowed(previousClickedFigureButton, buttonClicked);
+                if (this.turn % 2 == 0 && previousClickedFigureButton.figureType.color == Color.WHITE || this.turn % 2 != 0 && previousClickedFigureButton.figureType.color == Color.BLACK)
+                    moveIfAllowed(previousClickedFigureButton, buttonClicked);
             }
         }
     }
