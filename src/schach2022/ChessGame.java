@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -14,7 +15,8 @@ public class ChessGame implements MouseListener {
     private final ChessFieldButton[][] grid;
     private long turn;
 
-    private ChessFieldButton movedMarkerButton;
+    private ChessFieldButton movedFromMarkerButton;
+    private ChessFieldButton movedToMarkerButton;
     private List<Position> markedPos;
     private ChessFieldButton previousClickedFigureButton;
 
@@ -29,7 +31,8 @@ public class ChessGame implements MouseListener {
         this.frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         this.turn = 0;
         this.markedPos = new ArrayList<>();
-        this.movedMarkerButton = new ChessFieldButton(null, null, null);
+        this.movedFromMarkerButton = new ChessFieldButton(null, null, null);
+        this.movedToMarkerButton = new ChessFieldButton(null, null, null);
 
         this.grid = new ChessFieldButton[8][8];
         InitDataFigures.init();
@@ -50,8 +53,8 @@ public class ChessGame implements MouseListener {
                 this.grid[i][j] = (new ChessFieldButton(new Position(i, j), ChessFigure.EMPTY, this));
             }
         }
-        Arrays.stream(this.grid[1]).sequential().forEach(e -> e.setFigure(ChessFigure.PAWN_BLACK));
-        Arrays.stream(this.grid[6]).sequential().forEach(e -> e.setFigure(ChessFigure.PAWN_WHITE));
+        Arrays.stream(this.grid[1]).forEach(e -> e.setFigure(ChessFigure.PAWN_BLACK));
+        Arrays.stream(this.grid[6]).forEach(e -> e.setFigure(ChessFigure.PAWN_WHITE));
 
         for (List<PositionFigureWrapper> initDatum : this.initData) {
             for (PositionFigureWrapper pFW : initDatum) {
@@ -73,8 +76,10 @@ public class ChessGame implements MouseListener {
     }
 
     private void moveFigure(Position origin, Position dest) {
-        this.movedMarkerButton.setMoved(false);
-        this.movedMarkerButton.setBackground(Color.WHITE);
+        this.movedFromMarkerButton.setMovedAway(false);
+        this.movedFromMarkerButton.setBackground(Color.WHITE);
+        this.movedToMarkerButton.setMovedTo(false);
+        this.movedToMarkerButton.setBackground(Color.WHITE);
         this.turn++;
         ChessFieldButton originButton = this.grid[origin.getX()][origin.getY()];
         ChessFieldButton destButton = this.grid[dest.getX()][dest.getY()];
@@ -82,10 +87,16 @@ public class ChessGame implements MouseListener {
 
         originButton.setFigure(ChessFigure.EMPTY);
         originButton.setBackground(Color.GREEN);
-        originButton.setMoved(true);
-        this.movedMarkerButton = originButton;
+        originButton.setMovedAway(true);
+
         destButton.setFigure(toMove);
         destButton.setTouched(true);
+        destButton.setBackground(Color.PINK);
+        destButton.setMovedTo(true);
+
+        this.movedFromMarkerButton = originButton;
+        this.movedToMarkerButton = destButton;
+
         this.removeMarker();
         this.previousClickedFigureButton = null;
 
@@ -94,8 +105,11 @@ public class ChessGame implements MouseListener {
                 c.setBounds(c.getX(), 700 -c.getY(), 100, 100);
             }
         }
+
         this.frame.repaint();
     }
+
+
 
     private boolean isEmpty(ChessFieldButton button) {
         return button.figureType == ChessFigure.EMPTY;
@@ -323,7 +337,14 @@ public class ChessGame implements MouseListener {
 
     private void removeMarker() {
         for (Position p: this.markedPos) {
-            if (this.grid[p.getX()][p.getY()].wasMoved())
+            if (this.grid[p.getX()][p.getY()].wasMovedTo()) {
+                this.grid[p.getX()][p.getY()].setBackground(Color.PINK);
+                continue;
+            }
+            else
+                this.grid[p.getX()][p.getY()].setBackground(Color.WHITE);
+
+            if (this.grid[p.getX()][p.getY()].wasMovedAway())
                 this.grid[p.getX()][p.getY()].setBackground(Color.GREEN);
             else
                 this.grid[p.getX()][p.getY()].setBackground(Color.WHITE);
@@ -367,7 +388,7 @@ public class ChessGame implements MouseListener {
                     return;
                 }
 
-                if (!previousClickedFigureButton.wasMoved())
+                if (!previousClickedFigureButton.wasMovedAway())
                     previousClickedFigureButton.setBackground(Color.WHITE);
                 buttonClicked.setBackground(Color.blue);
                 if (this.turn % 2 == 0 && buttonClicked.figureType.color == Color.WHITE || this.turn % 2 != 0 && buttonClicked.figureType.color == Color.BLACK)
