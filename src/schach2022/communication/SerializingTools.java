@@ -1,15 +1,23 @@
 package schach2022.communication;
 
-import schach2022.Position;
+import schach2022.gameUtils.Position;
+import schach2022.gameUtils.PositionTuple;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SerializingTools {
 
-    public static Stream<Byte> serialize(Operation o, List<Position> pos) {
-        return Stream.concat(Stream.of(o.sequence).sequential(), posToByte(pos)).sequential();
+    public static Stream<Byte> serialize(List<Position> pos) {
+        return posToByte(pos).sequential();
+    }
+
+    public static Stream<Byte> serialize(PositionTuple pos) {
+        return Stream.of((byte) ((byte) (pos.getOrigin().getX() << 4) + (byte) (pos.getOrigin().getY())),
+                        (byte) ((byte) (pos.getDest().getX() << 4)
+                        + (byte) (pos.getDest().getY())));
     }
 
     private static Stream<Byte> posToByte(List<Position> pos) {
@@ -22,33 +30,35 @@ public class SerializingTools {
         }
         return result.stream().sequential();
     }
-
-    public static List<Position> deSerialize(Stream<Byte> b) {
-        return b.skip(1).map(e -> new Position(e >>> 4, (byte) ((e << 4)) >>> 4)).toList();
-    }
-
 /*
-    public static void main(String[] args) {
-
-        //List<Position> b = new ArrayList<>();
-
-        //b.add(new Position(7, 7));
-        //b.add(new Position(1, 2));
-
-        //var x = posToByte(b).toList();
-        //System.out.println(x.get(1));
-        //System.out.println(Integer.toBinaryString(x.get(1)));
-        //System.out.println(deSerialize(posToByte(b)).get(0));
-
-
-        List<Position> b = new ArrayList<>();
-
-        b.add(new Position(7, 7));
-        b.add(new Position(1, 2));
-
-        System.out.println(serialize(Operation.figureSelect, b).limit(1).toList().get(0));
-        System.out.println(deSerialize(serialize(Operation.figureSelect, b)));
-
+    public static List<Position> deSerialize(Stream<Byte> b) {
+        return b.map(e -> new Position(e >>> 4, (byte) ((e << 4)) >>> 4)).toList();
     }
-    */
+
+ */
+
+    public static PositionTuple deSerialize(Stream<Byte> b) {
+        var list = b.map(e -> new Position(e >>> 4, (byte) ((e << 4)) >>> 4)).toList();
+        return new PositionTuple(list.get(0), list.get(1));
+    }
+
+    public static void main(String[] args) {
+        PositionTuple x = deSerialize(serialize(new PositionTuple(new Position(6, 3), new Position(4, 3))));
+        System.out.println(x.getOrigin() + " : " + x.getDest());
+    }
+
+    public static Byte[] box(byte[] arr) {
+        Byte[] newArr = new Byte[arr.length];
+        for (int i = 0; i < newArr.length; i++) {
+            newArr[i] = arr[i];
+        }
+        return newArr;
+    }
+    public static  byte[] unBox(Byte[] arr) {
+        byte[] newArr = new byte[arr.length];
+        for (int i = 0; i < newArr.length; i++) {
+            newArr[i] = arr[i];
+        }
+        return newArr;
+    }
 }

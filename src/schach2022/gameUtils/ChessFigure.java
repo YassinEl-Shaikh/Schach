@@ -1,4 +1,4 @@
-package schach2022;
+package schach2022.gameUtils;
 
 import java.awt.*;
 
@@ -18,7 +18,7 @@ public enum ChessFigure {
     KNIGHT_BLACK(Color.BLACK),
     PAWN_BLACK(Color.BLACK);
 
-    Color color;
+    public Color color;
 
     ChessFigure() {
     }

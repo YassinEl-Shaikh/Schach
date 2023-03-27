@@ -1,4 +1,4 @@
-package schach2022;
+package schach2022.gameUtils;
 
 public class Position {
 

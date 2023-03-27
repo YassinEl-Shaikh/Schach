@@ -1,4 +1,6 @@
-package schach2022;
+package schach2022.offline;
+
+import schach2022.gameUtils.Position;
 
 import java.util.ArrayList;
 import java.util.List;

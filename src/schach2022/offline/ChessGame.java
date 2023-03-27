@@ -1,10 +1,11 @@
-package schach2022;
+package schach2022.offline;
+
+import schach2022.gameUtils.Position;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -59,8 +60,8 @@ public class ChessGame implements MouseListener {
         for (List<PositionFigureWrapper> initDatum : this.initData) {
             for (PositionFigureWrapper pFW : initDatum) {
                 Position nextPos = pFW.position();
-
-                this.grid[nextPos.getX()][nextPos.getY()] = new ChessFieldButton(nextPos, pFW.figureType(), this);
+                this.grid[nextPos.getX()][nextPos.getY()].figureType = pFW.figureType();
+                // = new ChessFieldButton(nextPos, pFW.figureType(), this);
             }
         }
 
@@ -378,6 +379,7 @@ public class ChessGame implements MouseListener {
 
         if (buttonClicked.getBackground() == Color.blue) {
             buttonClicked.setBackground(Color.WHITE);
+            removeMarker();
         }
         else {
             if (!isEmpty(buttonClicked)) {
