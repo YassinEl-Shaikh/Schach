@@ -16,10 +16,6 @@ public class Position {
         return y;
     }
 
-    public Position scale(int s) {
-        return new Position(this.x * s, this.y * s);
-    }
-
     @Override
     public String toString() {
         return "(x=" + x + ", y=" + y +")";

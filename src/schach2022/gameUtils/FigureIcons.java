@@ -2,7 +2,7 @@ package schach2022.gameUtils;
 
 import javax.swing.*;
 
-public class FigureIcons {
+public record FigureIcons() {
     private final static String PATH = "C:/Users/yassi/IdeaProjects/Schach/src/schach2022/Icons/";
     public final static ImageIcon ROOK_BLACK = new ImageIcon(PATH + "Rook_Black.png");
     public final static ImageIcon ROOK_WHITE = new ImageIcon(PATH + "Rook_White.png");
@@ -16,4 +16,6 @@ public class FigureIcons {
     public final static ImageIcon KNIGHT_WHITE = new ImageIcon(PATH + "Knight_White.png");
     public final static ImageIcon BISHOP_BLACK = new ImageIcon(PATH + "Bishop_Black.png");
     public final static ImageIcon BISHOP_WHITE = new ImageIcon(PATH + "Bishop_White.png");
+    public static final ImageIcon LEGAL_MOVE_WHITE = new ImageIcon(PATH + "Legal_Move_White.png");
+    public static final ImageIcon LEGAL_MOVE_BLACK = new ImageIcon(PATH + "Legal_Move_Black.png");
 }

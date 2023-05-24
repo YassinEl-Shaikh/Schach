@@ -4,7 +4,7 @@ import java.awt.*;
 
 public enum ChessFigure {
 
-    EMPTY,
+    EMPTY(),
     KING_WHITE(Color.WHITE),
     QUEEN_WHITE(Color.WHITE),
     ROOK_WHITE(Color.WHITE),
@@ -22,7 +22,6 @@ public enum ChessFigure {
 
     ChessFigure() {
     }
-
     ChessFigure(Color color) {
         this.color = color;
     }

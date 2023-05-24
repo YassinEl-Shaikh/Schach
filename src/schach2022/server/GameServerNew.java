@@ -2,30 +2,26 @@ package schach2022.server;
 
 import schach2022.client.GameClient;
 import schach2022.gameUtils.*;
-import schach2022.utils.*;
 import schach2022.communication.SerializingTools;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Stack;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 public class GameServerNew {
-    private final ChessFieldButton[][] grid;
+    private final ChessBoard board;
+
+    private Stack<PositionTuple> moves;
     private boolean isP1Turn;
-    private ChessFieldButton movedFromMarkerButton;
-    private ChessFieldButton movedToMarkerButton;
-    private List<Position> markedPos;
     private Socket player1;
     private Socket player2;
     private final ServerSocket socket;
-    private boolean running = false;
 
     public GameServerNew() {
         try {
@@ -34,31 +30,13 @@ public class GameServerNew {
             throw new RuntimeException("Was not able to set port: 1337");
         }
         this.isP1Turn = true;
-        this.markedPos = new ArrayList<>();
-        this.movedFromMarkerButton = new ChessFieldButton();
-        this.movedToMarkerButton = new ChessFieldButton();
-        this.grid = FieldInitialization.initiateField( null);
+        this.moves = new Stack<>();
+        this.board = ChessBoard.generateServerField();
     }
 
     private void connectPlayers() {
         this.player1 = connectPlayer(1, (byte) 1);
         this.player2 = connectPlayer(2, (byte) 2);
-        /*try {
-            this.player1 = socket.accept();
-            this.player1.getOutputStream().write(1);
-            System.out.println("Player 1 is there!");
-        }
-        catch (IOException e) {
-            throw new FailedToConnectException("Connection of Player1 failed!");
-        }
-        try {
-            this.player2 = socket.accept();
-            this.player2.getOutputStream().write(2);
-            System.out.println("Player 2 is there!");
-        }
-        catch (IOException e) {
-            throw new FailedToConnectException("Connection of Player2 failed!");
-        }*/
     }
 
     private Socket connectPlayer(int id, byte send) {
@@ -77,7 +55,7 @@ public class GameServerNew {
 
     public void run() {
         this.connectPlayers();
-        this.running = true;
+        boolean running = true;
         System.out.println("Players connected!");
         do {
             try {
@@ -86,15 +64,16 @@ public class GameServerNew {
                 throw new RuntimeException(e + "MEINE RUNTIME");
             }
 
-            if (GameRules.isCheckMate(GameRules.getKing(this.grid, this.isP1Turn ? ChessFigure.KING_BLACK.color : ChessFigure.KING_WHITE.color), this.grid))
-                this.running = false;
+            if (GameRules.isCheckMate(GameRules.getKing(this.board.getGrid(), this.isP1Turn ? ChessFigure.KING_BLACK.color : ChessFigure.KING_WHITE.color), this.board.getGrid())
+                    || GameRules.isStaleMate())
+                running = false;
 
             try {
-                Thread.sleep(500);
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-        } while(this.running);
+        } while(running);
     }
 
     private boolean checkWon() {
@@ -109,11 +88,15 @@ public class GameServerNew {
             return;
 
         PositionTuple pos = SerializingTools.deSerialize(Arrays.stream(SerializingTools.box(this.isP1Turn ? player1Input.readNBytes(2) : player2Input.readNBytes(2))));
-        System.out.println("Server deserialized: " + pos.getOrigin() + " : " + pos.getDest());
+        //System.out.println("Server deserialized: " + pos.getOrigin() + " : " + pos.getDest());
 
-        if (GameRules.canMove(pos.getOrigin(), pos.getDest(), this.grid, this.isP1Turn)) {
-            this.moveFigure(pos.getOrigin(), pos.getDest());
-            if (this.isP1Turn) player2Input.readNBytes(2); else player1Input.readNBytes(2); // Falls der andere Client versucht ungültig zu bewegen, Stream leeren.
+        if (GameRules.canMove(pos.getOrigin(), pos.getDest(), this.board, this.isP1Turn)) {
+            this.board.moveFigure(pos.getOrigin(), pos.getDest());
+            this.moves.push(pos);
+            if (this.isP1Turn) player2Input.skip(player2Input.available()); else player1Input.skip(player1Input.available()); // Falls der andere Client versucht ungültig zu bewegen, Stream leeren.
+            this.isP1Turn = !this.isP1Turn;
+            this.sendCommand(this.player1, pos);
+            this.sendCommand(this.player2, pos);
         }
         else
             System.out.println("Move was not valid!");
@@ -123,35 +106,13 @@ public class GameServerNew {
     private void sendCommand(Socket player, PositionTuple pos) throws IOException {
         //new DataOutputStream(player.getOutputStream()).writeBytes(Arrays.toString(SerializingTools.serialize(pos).toArray(Byte[]::new)));
         List<Byte> positions = SerializingTools.serialize(pos).toList();
-        player.getOutputStream().write(positions.get(0));
-        player.getOutputStream().write(positions.get(1));
-        player.getOutputStream().flush();
-
-    }
-    private void moveFigure(Position origin, Position dest) throws IOException {
-        this.movedFromMarkerButton.setMovedAway(false);
-        this.movedToMarkerButton.setMovedTo(false);
-        ChessFieldButton originButton = this.grid[origin.getX()][origin.getY()];
-        ChessFieldButton destButton = this.grid[dest.getX()][dest.getY()];
-        ChessFigure toMove = this.grid[origin.getX()][origin.getY()].getFigureType();
-
-        originButton.setFigure(ChessFigure.EMPTY);
-        originButton.setMovedAway(true);
-
-        destButton.setFigure(toMove);
-        destButton.setTouched(true);
-        destButton.setMovedTo(true);
-
-        this.movedFromMarkerButton = originButton;
-        this.movedToMarkerButton = destButton;
-
-        this.isP1Turn = !this.isP1Turn;
-
-        this.sendCommand(this.player1, new PositionTuple(origin, dest));
-        this.sendCommand(this.player2, new PositionTuple(origin, dest));
+        OutputStream out = player.getOutputStream();
+        out.write(positions.get(0));
+        out.write(positions.get(1));
+        out.flush();
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws InterruptedException {
         ExecutorService pool = Executors.newFixedThreadPool(3);
         GameServerNew server = new GameServerNew();
         pool.execute(server::run);

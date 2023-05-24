@@ -74,24 +74,39 @@ public class GameRules {
         return false;
     }
 
-    public static boolean canMove(Position origin, Position dest, ChessFieldButton[][] field, boolean turn) {
+    public static boolean canMove(Position origin, Position dest, ChessBoard board, boolean turn) {
+        if (!(board.getButton(origin).figureType.color == ((turn) ? Color.WHITE : Color.BLACK)))
+            return false;
+
         int oX = origin.getX();
         int oY = origin.getY();
         int dX = dest.getX();
         int dY = dest.getY();
+
+        ChessFieldButton[][] field = board.getGrid();
 
         ChessFieldButton originButton = field[origin.getX()][origin.getY()];
         ChessFieldButton destButton = field[dest.getX()][dest.getY()];
 
         switch (originButton.figureType) {
             case PAWN_WHITE, PAWN_BLACK:
+                boolean step1 = false;
+                boolean step2 = false;
                 if (Math.abs(oY - dY) == 0) {
                     if (originButton.isTouched()) {
-                        return (oX - dX == 1 && (isEmpty(destButton)) && turn) || (oX - dX == -1 && (isEmpty(destButton)) && !turn);
+                        step1 = oX - dX == 1 && originButton.isWhite() || oX - dX == -1 && !originButton.isWhite();
                     }
-                    return (oX - dX <= 2 && isEmpty(destButton) && turn) || (oX - dX >= -2 && oX - dX < 0 && isEmpty(destButton) && !turn);
+                    else
+                        step2 = oX - dX <= 2 && originButton.isWhite() || (oX - dX >= -2 && oX - dX < 0) && !originButton.isWhite();
+
+                    return step1 && isEmpty(destButton) || step2 && isEmpty(destButton) && (isEmpty(field[oX +1][oY]) || isEmpty(field[oX -1][oY]));
                 }
-                return false;
+                else if (Math.abs(oY - dY) == 1 && Math.abs(oX - dX) == 1) {
+                    System.out.println("True");
+                    return (!field[dX][dY].isEmpty() && field[dX][dY].isWhite() && !turn || !field[dX][dY].isEmpty() && !field[dX][dY].isWhite() && turn);
+                }
+                else
+                    return false;
 
             case ROOK_WHITE, ROOK_BLACK:
 
@@ -121,6 +136,7 @@ public class GameRules {
         }
     }
 
+    // INCOMPLETE!
     public static boolean canKingMove(Position origin) {
         int x = origin.getX();
         int y = origin.getY();
@@ -134,19 +150,19 @@ public class GameRules {
         return false;
     }
 
-    public static List<Position> getAvailablePos(Position origin, ChessFieldButton[][] field, boolean turn) {
+    public static List<Position> getAvailablePos(Position origin, ChessBoard board, boolean turn) {
         List<Position> result = new ArrayList<>();
-        for (int i = 0; i < field.length; i++) {
-            for (int j = 0; j < field.length; j++) {
-                if (canMove(origin, new Position(i, j), field, turn))
+        for (int i = 0; i < board.getGrid().length; i++) {
+            for (int j = 0; j < board.getGrid().length; j++) {
+                if (canMove(origin, new Position(i, j), board, turn))
                     result.add(new Position(i, j));
             }
         }
         return result;
     }
 
-    public static List<Position> getAvailablePos(Position origin, ChessFieldButton[][] field) {
-       return getAvailablePos(origin, field, field[origin.getX()][origin.getY()].figureType.color == Color.WHITE);
+    public static List<Position> getAvailablePos(Position origin, ChessBoard board) {
+       return getAvailablePos(origin, board, board.getGrid()[origin.getX()][origin.getY()].figureType.color == Color.WHITE);
     }
     public static boolean isEmpty(ChessFieldButton button) {
         return button.figureType == ChessFigure.EMPTY;
@@ -163,10 +179,14 @@ public class GameRules {
     public static ChessFieldButton getKing(ChessFieldButton[][] field, Color kingColor) {
         for (ChessFieldButton[] arr : field) {
             for (ChessFieldButton button : arr) {
-                if (button.figureType.color == kingColor)
+                if (button.figureType.color == kingColor && (button.figureType.equals(ChessFigure.KING_WHITE) || button.figureType.equals(ChessFigure.KING_BLACK)))
                     return button;
             }
         }
         return null;
+    }
+
+    public static boolean isStaleMate() {
+        return false;
     }
 }
